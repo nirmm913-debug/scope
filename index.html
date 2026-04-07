@@ -83,56 +83,43 @@
 
     const today = new Date().toLocaleDateString('ja-JP');
     
-    // 送信データ
     const payload = {
         contents: [{ parts: [{ text: `
-            あなたは熟練の東洋占術師です。以下のデータを基に本日（${today}）の運勢を鑑定してください。
+            あなたは熟練の東洋占術師です。
             【相談者データ】${JSON.stringify(PROFILE)}
-            【指示】簡潔に、かつ知的に回答。JSON形式のみで返せ。
+            今日（${today}）の運勢を鑑定し、以下のJSON形式で返せ。
             {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"一言", "advice":"助言"}
         ` }] }]
     };
 
-    // 2026年現在、最も通りやすい「3つの経路」を順に試す
-    const modelsToTry = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-pro"
-    ];
+    try {
+        // 2026年現在の絶対的な標準URL形式です
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    let lastError = "";
+        const resJson = await response.json();
 
-    for (const modelName of modelsToTry) {
-        try {
-            // URL構築（v1betaを使用）
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const resJson = await response.json();
-
-            if (response.ok) {
-                // 成功したら表示して終了
-                const aiText = resJson.candidates[0].content.parts[0].text;
-                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    render(JSON.parse(jsonMatch[0]));
-                    loader.classList.add('hidden');
-                    return; // 成功したのでここで関数を抜ける
-                }
-            } else {
-                lastError = resJson.error ? resJson.error.message : `HTTP ${response.status}`;
-                console.warn(`${modelName} failed: ${lastError}`);
-            }
-        } catch (e) {
-            lastError = e.message;
-            console.error(`${modelName} fetch error:`, e);
+        if (!response.ok) {
+            throw new Error(resJson.error ? resJson.error.message : "API通信エラー");
         }
+
+        const aiText = resJson.candidates[0].content.parts[0].text;
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        render(JSON.parse(jsonMatch[0]));
+        
+    } catch (e) {
+        console.error("Final Error:", e);
+        alert(`鑑定エラー: ${e.message}\n\n【対策】新しいプロジェクトでAPIキーを作り直して試してください。`);
+        idle.classList.remove('hidden');
+    } finally {
+        loader.classList.add('hidden');
     }
+}
 
     // すべてのモデルで失敗した場合
     alert(`【致命的なエラー】\nどのモデルも応答しませんでした。\n最後のエラー: ${lastError}\n\n対策: Google AI Studioで新しいAPIキーを作り直し、'RESET KEY'で貼り直してみてください。`);
