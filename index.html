@@ -73,41 +73,60 @@
         }
 
         async function fetchFortune() {
-            const apiKey = localStorage.getItem(KEY_NAME);
-            const idle = document.getElementById('idle-state');
-            const loader = document.getElementById('loader');
-            const display = document.getElementById('display-area');
+    const apiKey = localStorage.getItem(KEY_NAME);
+    const idle = document.getElementById('idle-state');
+    const loader = document.getElementById('loader');
+    const display = document.getElementById('display-area');
 
-            idle.classList.add('hidden');
-            loader.classList.remove('hidden');
+    idle.classList.add('hidden');
+    loader.classList.remove('hidden');
 
-            const today = new Date().toLocaleDateString('ja-JP');
-            const prompt = `あなたは熟練の東洋占術師です。以下のデータを基に本日（${today}）の運勢を鑑定してください。
-            【相談者データ】${JSON.stringify(PROFILE)}
-            【指示】
-            ・簡潔に、かつ知的に回答せよ。過度な励ましや全肯定は不要。
-            ・今日をどういう気持ちで過ごすべきか、一言アドバイスを添えよ。
-            ・以下のJSON形式のみで出力せよ（余計な文章は一切含めないこと）。
-            {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"今日の運勢一言(80字以内)", "advice":"過ごし方の助言(80字以内)"}`;
+    const today = new Date().toLocaleDateString('ja-JP');
+    
+    // 送信データ
+    const payload = {
+        contents: [{
+            parts: [{
+                text: `あなたは熟練の東洋占術師です。以下のデータを基に本日（${today}）の運勢を鑑定してください。
+                【相談者データ】${JSON.stringify(PROFILE)}
+                【指示】簡潔に、かつ知的に回答せよ。過度な励ましは不要。今日をどういう気持ちで過ごすべきか助言せよ。
+                【出力形式】以下のJSON形式のみで返せ。
+                {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"運勢一言", "advice":"過ごし方の助言"}`
+            }]
+        }]
+    };
 
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                const json = await res.json();
-                const text = json.candidates[0].content.parts[0].text;
-                const data = JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
-                render(data);
-            } catch (e) {
-                alert('鑑定に失敗しました。APIキーまたはネットワークを確認してください。');
-                idle.classList.remove('hidden');
-            } finally {
-                loader.classList.add('hidden');
-            }
+    try {
+        // 【修正ポイント】URLの末尾に「:generateContent」を確実に含め、パスを整理しました
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error?.message || `HTTP ${response.status}`);
         }
 
+        const resJson = await response.json();
+        const aiText = resJson.candidates[0].content.parts[0].text;
+        
+        // JSONを抽出して解析
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("解析エラー");
+        
+        render(JSON.parse(jsonMatch[0]));
+    } catch (e) {
+        console.error("Error details:", e);
+        alert(`鑑定エラー: ${e.message}`);
+        idle.classList.remove('hidden');
+    } finally {
+        loader.classList.add('hidden');
+    }
+}
         function render(d) {
             document.getElementById('display-area').innerHTML = `
                 <div class="bg-white p-10 rounded-[3.5rem] shadow-xl border border-stone-50 fade-in">
