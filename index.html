@@ -72,7 +72,7 @@
             if (confirm('設定をリセットしますか？')) { localStorage.removeItem(KEY_NAME); location.reload(); }
         }
 
-        async function fetchFortune() {
+   async function fetchFortune() {
     const apiKey = localStorage.getItem(KEY_NAME);
     const idle = document.getElementById('idle-state');
     const loader = document.getElementById('loader');
@@ -83,13 +83,12 @@
 
     const today = new Date().toLocaleDateString('ja-JP');
     
-    // 送信データ
     const payload = {
         contents: [{
             parts: [{
                 text: `あなたは熟練の東洋占術師です。以下のデータを基に本日（${today}）の運勢を鑑定してください。
                 【相談者データ】${JSON.stringify(PROFILE)}
-                【指示】簡潔に、かつ知的に回答せよ。過度な励ましは不要。今日をどういう気持ちで過ごすべきか助言せよ。
+                【指示】簡潔に、かつ知的に回答せよ。過度な励ましは不要。
                 【出力形式】以下のJSON形式のみで返せ。
                 {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"運勢一言", "advice":"過ごし方の助言"}`
             }]
@@ -97,8 +96,10 @@
     };
 
     try {
-        // 【修正ポイント】URLの末尾に「:generateContent」を確実に含め、パスを整理しました
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // 【最重要修正】モデル名を「gemini-1.5-flash」という標準的な名前にし、
+        // URLの組み立てを公式ドキュメントの最新推奨形式（v1beta/models/モデル名:generateContent）に合わせました。
+        const modelName = "gemini-1.5-flash"; 
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
         const response = await fetch(url, {
             method: 'POST',
@@ -106,22 +107,22 @@
             body: JSON.stringify(payload)
         });
 
+        const resJson = await response.json();
+
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error?.message || `HTTP ${response.status}`);
+            // エラーの詳細をアラートに出すように強化
+            const msg = resJson.error ? resJson.error.message : `HTTP ${response.status}`;
+            throw new Error(msg);
         }
 
-        const resJson = await response.json();
         const aiText = resJson.candidates[0].content.parts[0].text;
-        
-        // JSONを抽出して解析
         const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("解析エラー");
+        if (!jsonMatch) throw new Error("AIの回答を解析できませんでした");
         
         render(JSON.parse(jsonMatch[0]));
     } catch (e) {
-        console.error("Error details:", e);
-        alert(`鑑定エラー: ${e.message}`);
+        console.error("API Error:", e);
+        alert(`鑑定エラー: ${e.message}\n\n※AI Studioで'Gemini 1.5 Flash'が使用可能か確認してください。`);
         idle.classList.remove('hidden');
     } finally {
         loader.classList.add('hidden');
