@@ -46,7 +46,6 @@
 
     <script>
         const KEY_NAME = 'fixed_oracle_key_v2';
-        // ユーザー確定データ
         const PROFILE = {
             birth: "1983-09-13",
             hachiku: "年柱:癸亥, 月柱:辛酉, 日柱:甲辰",
@@ -72,60 +71,56 @@
             if (confirm('設定をリセットしますか？')) { localStorage.removeItem(KEY_NAME); location.reload(); }
         }
 
-  async function fetchFortune() {
-    const apiKey = localStorage.getItem(KEY_NAME);
-    const idle = document.getElementById('idle-state');
-    const loader = document.getElementById('loader');
-    const display = document.getElementById('display-area');
+        async function fetchFortune() {
+            const apiKey = localStorage.getItem(KEY_NAME);
+            const idle = document.getElementById('idle-state');
+            const loader = document.getElementById('loader');
 
-    idle.classList.add('hidden');
-    loader.classList.remove('hidden');
+            idle.classList.add('hidden');
+            loader.classList.remove('hidden');
 
-    const today = new Date().toLocaleDateString('ja-JP');
-    
-    const payload = {
-        contents: [{ parts: [{ text: `
-            あなたは熟練の東洋占術師です。
-            【相談者データ】${JSON.stringify(PROFILE)}
-            今日（${today}）の運勢を鑑定し、以下のJSON形式で返せ。
-            {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"一言", "advice":"助言"}
-        ` }] }]
-    };
+            const today = new Date().toLocaleDateString('ja-JP');
 
-    try {
-        // 2026年現在の絶対的な標準URL形式です
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+            const payload = {
+                contents: [{ parts: [{ text: `
+                    あなたは熟練の東洋占術師です。以下のデータを基に本日（${today}）の運勢を鑑定してください。
+                    【相談者データ】${JSON.stringify(PROFILE)}
+                    【指示】
+                    ・簡潔に、かつ知的に回答せよ。過度な励ましや全肯定は不要。
+                    ・今日をどういう気持ちで過ごすべきか、一言アドバイスを添えよ。
+                    ・以下のJSON形式のみで出力せよ（余計な文章は一切含めないこと）。
+                    {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"今日の運勢一言(80字以内)", "advice":"過ごし方の助言(80字以内)"}
+                ` }] }]
+            };
 
-        const resJson = await response.json();
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-        if (!response.ok) {
-            throw new Error(resJson.error ? resJson.error.message : "API通信エラー");
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const resJson = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(resJson.error ? resJson.error.message : "API通信エラー");
+                }
+
+                const aiText = resJson.candidates[0].content.parts[0].text;
+                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+                render(JSON.parse(jsonMatch[0]));
+
+            } catch (e) {
+                console.error("Error:", e);
+                alert(`鑑定エラー: ${e.message}\n\nAPIキーを確認して「Reset Key」から再入力してください。`);
+                idle.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden');
+            }
         }
 
-        const aiText = resJson.candidates[0].content.parts[0].text;
-        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-        render(JSON.parse(jsonMatch[0]));
-        
-    } catch (e) {
-        console.error("Final Error:", e);
-        alert(`鑑定エラー: ${e.message}\n\n【対策】新しいプロジェクトでAPIキーを作り直して試してください。`);
-        idle.classList.remove('hidden');
-    } finally {
-        loader.classList.add('hidden');
-    }
-}
-
-    // すべてのモデルで失敗した場合
-    alert(`【致命的なエラー】\nどのモデルも応答しませんでした。\n最後のエラー: ${lastError}\n\n対策: Google AI Studioで新しいAPIキーを作り直し、'RESET KEY'で貼り直してみてください。`);
-    idle.classList.remove('hidden');
-    loader.classList.add('hidden');
-}
         function render(d) {
             document.getElementById('display-area').innerHTML = `
                 <div class="bg-white p-10 rounded-[3.5rem] shadow-xl border border-stone-50 fade-in">
@@ -153,6 +148,9 @@
                             <p class="text-[9px] text-stone-400 font-bold mb-3 uppercase tracking-[0.2em]">Mindset Advice</p>
                             <p class="text-sm font-bold text-slate-700 leading-relaxed">${d.advice}</p>
                         </div>
+                    </div>
+                    <div class="mt-10 text-center">
+                        <button onclick="location.reload()" class="px-8 py-3 border border-stone-200 rounded-full text-[10px] tracking-widest uppercase text-stone-400 active:scale-95 transition">再鑑定する</button>
                     </div>
                 </div>
             `;
