@@ -83,49 +83,61 @@
 
     const today = new Date().toLocaleDateString('ja-JP');
     
+    // 送信データ
     const payload = {
-        contents: [{
-            parts: [{
-                text: `あなたは熟練の東洋占術師です。以下のデータを基に本日（${today}）の運勢を鑑定してください。
-                【相談者データ】${JSON.stringify(PROFILE)}
-                【指示】簡潔に、かつ知的に回答せよ。過度な励ましは不要。
-                【出力形式】以下のJSON形式のみで返せ。
-                {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"運勢一言", "advice":"過ごし方の助言"}`
-            }]
-        }]
+        contents: [{ parts: [{ text: `
+            あなたは熟練の東洋占術師です。以下のデータを基に本日（${today}）の運勢を鑑定してください。
+            【相談者データ】${JSON.stringify(PROFILE)}
+            【指示】簡潔に、かつ知的に回答。JSON形式のみで返せ。
+            {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"一言", "advice":"助言"}
+        ` }] }]
     };
 
-    try {
-        // 【打開策】モデル名を最新の識別子「-latest」付きに変更。
-        // これにより、v1betaのエンドポイントで「Not Found」になるのを防ぎます。
-        const model = "gemini-1.5-flash-latest";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+    // 2026年現在、最も通りやすい「3つの経路」を順に試す
+    const modelsToTry = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-pro"
+    ];
 
-        const resJson = await response.json();
+    let lastError = "";
 
-        if (!response.ok) {
-            const msg = resJson.error ? resJson.error.message : `HTTP ${response.status}`;
-            throw new Error(msg);
+    for (const modelName of modelsToTry) {
+        try {
+            // URL構築（v1betaを使用）
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const resJson = await response.json();
+
+            if (response.ok) {
+                // 成功したら表示して終了
+                const aiText = resJson.candidates[0].content.parts[0].text;
+                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    render(JSON.parse(jsonMatch[0]));
+                    loader.classList.add('hidden');
+                    return; // 成功したのでここで関数を抜ける
+                }
+            } else {
+                lastError = resJson.error ? resJson.error.message : `HTTP ${response.status}`;
+                console.warn(`${modelName} failed: ${lastError}`);
+            }
+        } catch (e) {
+            lastError = e.message;
+            console.error(`${modelName} fetch error:`, e);
         }
-
-        const aiText = resJson.candidates[0].content.parts[0].text;
-        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("AIの回答形式が不正です");
-        
-        render(JSON.parse(jsonMatch[0]));
-    } catch (e) {
-        console.error("Critical API Error:", e);
-        alert(`鑑定エラー:\n${e.message}\n\n※このメッセージが出る場合は、コードを書き換えた後にブラウザを『強力に再読み込み』してください。`);
-        idle.classList.remove('hidden');
-    } finally {
-        loader.classList.add('hidden');
     }
+
+    // すべてのモデルで失敗した場合
+    alert(`【致命的なエラー】\nどのモデルも応答しませんでした。\n最後のエラー: ${lastError}\n\n対策: Google AI Studioで新しいAPIキーを作り直し、'RESET KEY'で貼り直してみてください。`);
+    idle.classList.remove('hidden');
+    loader.classList.add('hidden');
 }
         function render(d) {
             document.getElementById('display-area').innerHTML = `
