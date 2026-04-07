@@ -10,6 +10,52 @@
         .serif { font-family: 'Noto Serif JP', serif; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* フリップカード */
+        .flip-card {
+            perspective: 800px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 88px;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+        .flip-card-front {
+            background: #f5f5f4;
+        }
+        .flip-card-back {
+            background: #1c1917;
+            transform: rotateY(180deg);
+        }
+        .flip-hint {
+            position: absolute;
+            bottom: 6px;
+            right: 8px;
+            font-size: 8px;
+            opacity: 0.3;
+            letter-spacing: 0.05em;
+        }
     </style>
 </head>
 <body class="bg-stone-50 min-h-screen flex flex-col items-center p-4 text-slate-800">
@@ -71,6 +117,10 @@
             if (confirm('設定をリセットしますか？')) { localStorage.removeItem(KEY_NAME); location.reload(); }
         }
 
+        function toggleFlip(el) {
+            el.classList.toggle('flipped');
+        }
+
         async function fetchFortune() {
             const apiKey = localStorage.getItem(KEY_NAME);
             const idle = document.getElementById('idle-state');
@@ -89,7 +139,7 @@
                     ・簡潔に、かつ知的に回答せよ。過度な励ましや全肯定は不要。
                     ・今日をどういう気持ちで過ごすべきか、一言アドバイスを添えよ。
                     ・以下のJSON形式のみで出力せよ（余計な文章は一切含めないこと）。
-                    {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"今日の運勢一言(80字以内)", "advice":"過ごし方の助言(80字以内)"}
+                    {"score":0-100, "love":0-100, "work":0-100, "love_comment":"恋愛・対人運の解説(40字以内)", "work_comment":"仕事・金運の解説(40字以内)", "color":"色", "direction":"方位", "message":"今日の運勢一言(80字以内)", "advice":"過ごし方の助言(80字以内)"}
                 ` }] }]
             };
 
@@ -126,8 +176,36 @@
                 <div class="bg-white p-10 rounded-[3.5rem] shadow-xl border border-stone-50 fade-in">
                     <div class="flex justify-between items-start mb-12">
                         <div class="serif text-7xl text-slate-900">${d.score}<span class="text-sm ml-1 opacity-30">/100</span></div>
-                        <div class="text-[10px] font-bold text-stone-300 leading-relaxed tracking-widest text-right">
-                            LOVE: ${d.love}%<br>WORK: ${d.work}%
+                        <div class="flex flex-col gap-2 w-[48%]">
+
+                            <div class="flip-card" onclick="toggleFlip(this)">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <p class="text-[9px] text-stone-400 uppercase tracking-widest mb-1">Love</p>
+                                        <p class="text-sm font-bold text-slate-700">${d.love}%</p>
+                                        <span class="flip-hint">tap ↺</span>
+                                    </div>
+                                    <div class="flip-card-back">
+                                        <p class="text-[9px] text-stone-400 uppercase tracking-widest mb-1">Love</p>
+                                        <p class="text-[10px] text-stone-300 leading-relaxed text-center">${d.love_comment || '—'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flip-card" onclick="toggleFlip(this)">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <p class="text-[9px] text-stone-400 uppercase tracking-widest mb-1">Work</p>
+                                        <p class="text-sm font-bold text-slate-700">${d.work}%</p>
+                                        <span class="flip-hint">tap ↺</span>
+                                    </div>
+                                    <div class="flip-card-back">
+                                        <p class="text-[9px] text-stone-400 uppercase tracking-widest mb-1">Work</p>
+                                        <p class="text-[10px] text-stone-300 leading-relaxed text-center">${d.work_comment || '—'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                     <div class="space-y-10">
