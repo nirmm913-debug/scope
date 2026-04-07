@@ -91,7 +91,7 @@
             {"score":0-100, "love":0-100, "work":0-100, "color":"色", "direction":"方位", "message":"今日の運勢一言(80字以内)", "advice":"過ごし方の助言(80字以内)"}`;
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
