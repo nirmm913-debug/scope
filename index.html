@@ -96,8 +96,10 @@
     };
 
     try {
-        // 【修正ポイント】URLを「v1」に変更し、モデル名も安定版の指定にしました
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // 【打開策】モデル名を最新の識別子「-latest」付きに変更。
+        // これにより、v1betaのエンドポイントで「Not Found」になるのを防ぎます。
+        const model = "gemini-1.5-flash-latest";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         
         const response = await fetch(url, {
             method: 'POST',
@@ -114,13 +116,12 @@
 
         const aiText = resJson.candidates[0].content.parts[0].text;
         const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("AIの回答を解析できませんでした");
+        if (!jsonMatch) throw new Error("AIの回答形式が不正です");
         
         render(JSON.parse(jsonMatch[0]));
     } catch (e) {
-        console.error("API Error:", e);
-        // エラー内容が具体的になるように変更
-        alert(`鑑定エラー:\n${e.message}`);
+        console.error("Critical API Error:", e);
+        alert(`鑑定エラー:\n${e.message}\n\n※このメッセージが出る場合は、コードを書き換えた後にブラウザを『強力に再読み込み』してください。`);
         idle.classList.remove('hidden');
     } finally {
         loader.classList.add('hidden');
