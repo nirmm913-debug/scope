@@ -72,7 +72,7 @@
             if (confirm('設定をリセットしますか？')) { localStorage.removeItem(KEY_NAME); location.reload(); }
         }
 
-   async function fetchFortune() {
+  async function fetchFortune() {
     const apiKey = localStorage.getItem(KEY_NAME);
     const idle = document.getElementById('idle-state');
     const loader = document.getElementById('loader');
@@ -96,10 +96,8 @@
     };
 
     try {
-        // 【最重要修正】モデル名を「gemini-1.5-flash」という標準的な名前にし、
-        // URLの組み立てを公式ドキュメントの最新推奨形式（v1beta/models/モデル名:generateContent）に合わせました。
-        const modelName = "gemini-1.5-flash"; 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        // 【修正ポイント】URLを「v1」に変更し、モデル名も安定版の指定にしました
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
         const response = await fetch(url, {
             method: 'POST',
@@ -110,7 +108,6 @@
         const resJson = await response.json();
 
         if (!response.ok) {
-            // エラーの詳細をアラートに出すように強化
             const msg = resJson.error ? resJson.error.message : `HTTP ${response.status}`;
             throw new Error(msg);
         }
@@ -122,7 +119,8 @@
         render(JSON.parse(jsonMatch[0]));
     } catch (e) {
         console.error("API Error:", e);
-        alert(`鑑定エラー: ${e.message}\n\n※AI Studioで'Gemini 1.5 Flash'が使用可能か確認してください。`);
+        // エラー内容が具体的になるように変更
+        alert(`鑑定エラー:\n${e.message}`);
         idle.classList.remove('hidden');
     } finally {
         loader.classList.add('hidden');
