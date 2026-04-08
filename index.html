@@ -159,7 +159,13 @@
                     <text x="80" y="28" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="7.5" fill="${sym.accent}" letter-spacing="1" opacity="0.8">${cardName}</text>
                     <circle cx="80" cy="130" r="46" fill="${sym.accent}" opacity="0.07"/>
                     <circle cx="80" cy="130" r="38" fill="none" stroke="${sym.accent}" stroke-width="0.6" opacity="0.3"/>
-                    <text x="80" y="148" text-anchor="middle" font-size="54" fill="${sym.accent}" opacity="0.75">${sym.glyph}</text>
+                    
+                    <foreignObject x="40" y="90" width="80" height="80">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="flex items-center justify-center w-full h-full">
+                            <i data-lucide="${sym.glyph}" style="color: ${sym.accent}; width: 42px; height: 42px; stroke-width: 1px; opacity: 0.8;"></i>
+                        </div>
+                    </foreignObject>
+
                     <circle cx="26" cy="26" r="4" fill="${sym.accent}" opacity="0.15"/>
                     <circle cx="134" cy="26" r="4" fill="${sym.accent}" opacity="0.15"/>
                     <circle cx="26" cy="234" r="4" fill="${sym.accent}" opacity="0.15"/>
@@ -169,7 +175,6 @@
                 </g>
             </svg>`;
         }
-
         window.onload = () => {
             if (!localStorage.getItem(KEY_NAME)) {
                 document.getElementById('setup-view').classList.remove('hidden');
@@ -313,6 +318,7 @@
                 const data = JSON.parse(jsonMatch[0]);
 
                 faceContent.innerHTML = buildCardSVG(data.name, data.reversed);
+                lucide.createIcons();
 
                 setTimeout(() => {
                     inner.classList.add('revealed');
