@@ -147,7 +147,7 @@
             return { glyph: "✦", color: "#f0e6c8", accent: "#c8a84b" };
         }
 
-        function buildCardSVG(cardName, isReversed, iconName) {
+        function buildCardSVG (cardName, isReversed, icon) {
             const sym = getSymbol(cardName);
             // AIが選んだアイコンがあればそれを使う。なければデフォルトの絵柄。
             const glyph = iconName || sym.glyph;
@@ -305,6 +305,7 @@
                 contents: [{ parts: [{ text: `
                     あなたは熟練のタロット占い師です。大アルカナ22枚から1枚を選び、正位置か逆位置かも決めてください。
                     以下のJSON形式のみで返せ。余計な解説は一切不要。
+                    iconはLucideアイコン名(sun, moon, star, flame, eye, heart, zap, leaf, anchor, skull, crown, sparkles等)から、そのカードの解釈に最も合うものを一つ選べ。
                     {"name":"カード名", "reversed":true/false, "meaning":"一言メッセージ", "icon":"Lucideのアイコン名"}
                     カード名は日本語で（愚者、魔術師、女教皇、女帝、皇帝、教皇、恋人、戦車、力、隠者、運命の輪、正義、吊られた男、死神、節制、悪魔、塔、星、月、太陽、審判、世界）
                 ` }] }]
@@ -320,7 +321,7 @@
                 const data = JSON.parse(jsonMatch[0]);
 
                 // AIが選んだアイコン(data.icon)を優先して使うようにします
-                faceContent.innerHTML = buildCardSVG(data.name, data.reversed, data.icon);
+                faceContent.innerHTML = (data.name, data.reversed, data.icon);
                 lucide.createIcons();
 
                 setTimeout(() => {
