@@ -150,7 +150,7 @@
         function buildCardSVG (cardName, isReversed, icon) {
             const sym = getSymbol(cardName);
             // AIが選んだアイコンがあればそれを使う。なければデフォルトの絵柄。
-            const glyph = iconName || sym.glyph;
+            const glyph = icon || sym.glyph;
             const rotation = isReversed ? 'transform="rotate(180, 80, 130)"' : '';
             return `<svg viewBox="0 0 160 260" xmlns="http://www.w3.org/2000/svg" width="160" height="260">
                 <rect width="160" height="260" rx="12" fill="${sym.color}"/>
@@ -321,7 +321,7 @@
                 const data = JSON.parse(jsonMatch[0]);
 
                 // AIが選んだアイコン(data.icon)を優先して使うようにします
-                faceContent.innerHTML = (data.name, data.reversed, data.icon);
+                faceContent.innerHTML = buildCardSVG(data.name, data.reversed, data.icon);
                 lucide.createIcons();
 
                 setTimeout(() => {
