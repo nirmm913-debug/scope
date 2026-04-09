@@ -147,8 +147,10 @@
             return { glyph: "✦", color: "#f0e6c8", accent: "#c8a84b" };
         }
 
-        function buildCardSVG(cardName, isReversed) {
+        function buildCardSVG(cardName, isReversed, iconName) {
             const sym = getSymbol(cardName);
+            // AIが選んだアイコンがあればそれを使う。なければデフォルトの絵柄。
+            const glyph = iconName || sym.glyph;
             const rotation = isReversed ? 'transform="rotate(180, 80, 130)"' : '';
             return `<svg viewBox="0 0 160 260" xmlns="http://www.w3.org/2000/svg" width="160" height="260">
                 <rect width="160" height="260" rx="12" fill="${sym.color}"/>
@@ -162,7 +164,7 @@
                     
                     <foreignObject x="40" y="90" width="80" height="80">
                         <div xmlns="http://www.w3.org/1999/xhtml" class="flex items-center justify-center w-full h-full">
-                            <i data-lucide="${sym.glyph}" style="color: ${sym.accent}; width: 42px; height: 42px; stroke-width: 1px; opacity: 0.8;"></i>
+                            <i data-lucide="${glyph}" style="color: ${sym.accent}; width: 42px; height: 42px; stroke-width: 1px; opacity: 0.8;"></i>
                         </div>
                     </foreignObject>
 
@@ -303,7 +305,7 @@
                 contents: [{ parts: [{ text: `
                     あなたは熟練のタロット占い師です。大アルカナ22枚から1枚を選び、正位置か逆位置かも決めてください。
                     以下のJSON形式のみで返せ。余計な解説は一切不要。
-                    {"name":"カード名", "reversed":true/false, "meaning":"一言メッセージ(40字以内)"}
+                    {"name":"カード名", "reversed":true/false, "meaning":"一言メッセージ", "icon":"Lucideのアイコン名"}
                     カード名は日本語で（愚者、魔術師、女教皇、女帝、皇帝、教皇、恋人、戦車、力、隠者、運命の輪、正義、吊られた男、死神、節制、悪魔、塔、星、月、太陽、審判、世界）
                 ` }] }]
             };
@@ -317,7 +319,8 @@
                 const jsonMatch = aiText.match(/\{[\s\S]*\}/);
                 const data = JSON.parse(jsonMatch[0]);
 
-                faceContent.innerHTML = buildCardSVG(data.name, data.reversed);
+                // AIが選んだアイコン(data.icon)を優先して使うようにします
+                faceContent.innerHTML = buildCardSVG(data.name, data.reversed, data.icon);
                 lucide.createIcons();
 
                 setTimeout(() => {
